@@ -105,7 +105,7 @@ help:  # Get help
 	}\
 	END {\
 		num_commands = length(commands);\
-		longest_command = 10;\
+		longest_command = 15;\
 		longest_arg = 25;\
 	    for (i = 0; i <= num_commands; i++) {\
 			command_len = length(commands[i]);\
