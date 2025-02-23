@@ -13,13 +13,14 @@ RESET  := \033[0m
 # })
 define announce_interactive_step
 	@{ \
-		echo "$(GREEN)>>>$1$(RESET)"; \
+		message=$$(echo $1); \
+		echo "$(GREEN)>>> $$message$(RESET)"; \
 		$2; \
 		res=$$(echo $$?); \
 		if [ $$res -eq 0 ]; then \
-			echo "$(GREEN)(END) >>>$1$(RESET)"; \
+			echo "$(GREEN)>>> (END) $$message$(RESET)"; \
 		else \
-			echo "$(RED)(END)($$res) >>>$1$(RESET)"; \
+			echo "$(RED)>>> (END)($$res) $$message$(RESET)"; \
 		fi; \
 		echo; \
 	}
@@ -31,15 +32,33 @@ endef
 # })
 define announce_step
 	@{ \
+		message=$$(echo $1); \
 		output=$$($2 2>&1); \
 		res=$$(echo $$?); \
 		if [ $$res -eq 0 ]; then \
-			echo "$(GREEN)>>>$1$(RESET)"; \
+			echo "$(GREEN)>>> $$message$(RESET)"; \
 		else \
-			echo "$(RED)($$res) >>>$1$(RESET)"; \
+			echo "$(RED)>>> ($$res) $$message$(RESET)"; \
 		fi; \
 		echo $$output; \
 		echo; \
+	}
+endef
+
+# Usage example:
+# $(eval ENV := $(shell $(call get_user_input,'Choose environment (dev/staging/prod)','dev staging prod')))
+# @echo "Selected environment: $(ENV)"
+define get_user_input
+	{ \
+		while true; do \
+			read -p $(1) response; \
+			for option in $$(echo $(2)); do \
+				if [ "$$response" = "$$option" ]; then \
+					echo $$response; \
+					exit 0; \
+				fi; \
+			done; \
+		done; \
 	}
 endef
 
@@ -67,7 +86,12 @@ example_ssh:  # Open an ssh connection to the given host
 		ssh $(user)@$(ip); \
 	})
 	@$(call announce_step, "Retreiving .vimrc", scp $(user)@$(ip):/home/$(user)/.vimrc ./vimrc)
-	@$(call announce_step, "Print the .vimrc", cat ./vimrc)
+	@$(call announce_interactive_step, "Cleaning up vimrc", {\
+		deleteVimrc=$$($(call get_user_input, 'Delete vimrc? (y/n) ', 'y n')); \
+		if [ "$$deleteVimrc" = "y" ]; then \
+			rm ./vimrc; \
+		fi; \
+	})
 
 
 MAKEFILE_PATH := $(realpath $(lastword $(MAKEFILE_LIST)))
